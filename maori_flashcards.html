@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Māori Flashcard & Quiz Game</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f0f8ff;
+      padding: 1rem;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+    }
+
+    .card, .quiz {
+      max-width: 350px;
+      margin: 1rem auto;
+      padding: 1rem;
+      background: white;
+      border: 2px solid #0077b6;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .card-face {
+      font-size: 1.5rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .buttons {
+      margin-top: 1rem;
+    }
+
+    button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #0077b6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #023e8a;
+    }
+
+    .option {
+      display: block;
+      margin: 0.5rem auto;
+      padding: 0.5rem;
+      background: #caf0f8;
+      border: 1px solid #0077b6;
+      border-radius: 5px;
+      cursor: pointer;
+      max-width: 300px;
+    }
+
+    .option.correct {
+      background-color: #90ee90;
+    }
+
+    .option.wrong {
+      background-color: #f08080;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Te Reo Māori Game</h1>
+  <div class="buttons">
+    <button onclick="showMode('flash')">Flashcard Mode</button>
+    <button onclick="showMode('quiz')">Quiz Mode</button>
+  </div>
+
+  <!-- Flashcard Mode -->
+  <div class="card" id="flashcard">
+    <div class="card-face" id="card-front" onclick="flipCard()">Click to flip</div>
+    <div class="buttons">
+      <button onclick="nextCard()">Next</button>
+      <button onclick="shuffleCards()">Shuffle</button>
+    </div>
+  </div>
+
+  <!-- Quiz Mode -->
+  <div class="quiz hidden" id="quiz">
+    <div id="quiz-question">Loading...</div>
+    <div id="quiz-options"></div>
+    <div class="buttons">
+      <button onclick="nextQuiz()">Next Question</button>
+    </div>
+  </div>
+
+  <script>
+    const wordList = [
+      { maori: "Aotearoa", english: "New Zealand, long white cloud" },
+      { maori: "aroha", english: "love" },
+      { maori: "awa", english: "river" },
+      { maori: "haka", english: "generic term for Māori dance" },
+      { maori: "hangi", english: "traditional feast prepared in earth oven" },
+      { maori: "hapu", english: "clan, sub-tribe; to be born" },
+      { maori: "hīkoi", english: "walk" },
+      { maori: "hui", english: "gathering, meeting" },
+      { maori: "iti", english: "small" },
+      { maori: "iwi", english: "tribe" },
+      { maori: "kai", english: "food" },
+      { maori: "karakia", english: "prayer" },
+      { maori: "kaumatua", english: "elder" },
+      { maori: "kauri", english: "large native conifer" },
+      { maori: "kiwi", english: "native flightless bird" },
+      { maori: "koha", english: "gift, present (usually money, can be food or precious items, given by guest to hosts)" },
+      { maori: "kōhanga reo", english: "language nest, Maori immersion pre-school (0 to 4 years)" },
+      { maori: "mahi", english: "work or activity" },
+      { maori: "mana", english: "prestige, reputation" },
+      { maori: "manuhiri", english: "guests, visitors" },
+      { maori: "Māori", english: "indigenous people of NZ, the language of the indigenous people" },
+      { maori: "marae", english: "formal meeting area or complex" },
+      { maori: "maunga", english: "mountain" },
+      { maori: "moa", english: "extinct large flightless bird" },
+      { maori: "moana", english: "sea" },
+      { maori: "motu", english: "island" },
+      { maori: "nui", english: "large, many, big" },
+      { maori: "pā", english: "hill fort" },
+      { maori: "Pākehā", english: "New Zealander of non-Māori descent" },
+      { maori: "pounamu", english: "greenstone, jade" },
+      { maori: "puku", english: "belly, stomach" },
+      { maori: "rangatira", english: "chief, leader" },
+      { maori: "taihoa", english: "to delay, wait" },
+      { maori: "tama", english: "son, young man" },
+      { maori: "tamāhine", english: "daughter" },
+      { maori: "tamariki", english: "children" },
+      { maori: "tāne", english: "man, husband" },
+      { maori: "tangi", english: "funeral" },
+      { maori: "taonga", english: "treasured possessions or cultural items" },
+      { maori: "tapu", english: "sacred, taboo" },
+      { maori: "te reo Māori", english: "the Māori Language" },
+      { maori: "tipuna/tupuna", english: "ancestor" },
+      { maori: "tuatara", english: "endemic NZ reptile, distinct lineage" },
+      { maori: "wahine", english: "woman, wife" },
+      { maori: "wai", english: "water" },
+      { maori: "waiata", english: "song or chant" },
+      { maori: "waka", english: "canoe or canoe group" },
+      { maori: "whaikōrero", english: "art of speech-making" },
+      { maori: "whakapapa", english: "genealogy" },
+      { maori: "whānau", english: "extended family" },
+      { maori: "whenua", english: "land, homeland" },
+    ];
+
+    let shuffledList = [...wordList];
+    let currentIndex = 0;
+    let cardFlipped = false;
+
+    function shuffleCards() {
+      shuffledList = [...wordList].sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      showCard();
+    }
+
+    function showCard() {
+      const front = document.getElementById('card-front');
+      const card = shuffledList[currentIndex];
+      front.textContent = cardFlipped ? card.english : card.maori;
+    }
+
+    function flipCard() {
+      cardFlipped = !cardFlipped;
+      showCard();
+    }
+
+    function nextCard() {
+      currentIndex = (currentIndex + 1) % shuffledList.length;
+      cardFlipped = false;
+      showCard();
+    }
+
+    function showMode(mode) {
+      document.getElementById('flashcard').classList.add('hidden');
+      document.getElementById('quiz').classList.add('hidden');
+      if (mode === 'flash') {
+        document.getElementById('flashcard').classList.remove('hidden');
+        shuffleCards();
+      } else {
+        document.getElementById('quiz').classList.remove('hidden');
+        nextQuiz();
+      }
+    }
+
+    function nextQuiz() {
+      const questionElem = document.getElementById('quiz-question');
+      const optionsElem = document.getElementById('quiz-options');
+      const question = wordList[Math.floor(Math.random() * wordList.length)];
+      const correct = question.maori;
+
+      let choices = [correct];
+      while (choices.length < 4) {
+        let option = wordList[Math.floor(Math.random() * wordList.length)].maori;
+        if (!choices.includes(option)) choices.push(option);
+      }
+      choices = choices.sort(() => Math.random() - 0.5);
+
+      questionElem.textContent = `What is the Māori word for: "${question.english}"?`;
+      optionsElem.innerHTML = '';
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = choice;
+        btn.onclick = () => {
+          if (choice === correct) {
+            btn.classList.add('correct');
+          } else {
+            btn.classList.add('wrong');
+          }
+        };
+        optionsElem.appendChild(btn);
+      });
+    }
+
+    // Init
+    shuffleCards();
+  </script>
+</body>
+</html>
